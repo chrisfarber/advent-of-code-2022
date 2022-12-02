@@ -2,6 +2,7 @@ use std::{
     env,
     fs::File,
     io::{self, BufRead, Error},
+    num::ParseIntError,
     path::Path,
     process::exit,
 };
@@ -13,17 +14,45 @@ fn main() {
         exit(1);
     };
 
-    day1(&file_path).unwrap();
+    day1(&file_path);
 }
 
-fn day1(path_str: &String) -> Result<(), Error> {
-    let lines = read_lines(&path_str)?
-        .map(|l| l.unwrap())
-        .map(|l| parse_int_or_empty(&l).unwrap());
-    for line in lines {
-        println!("{:?}", line);
+fn day1(path_str: &String) {
+    let lines = read_lines(&path_str, |line| parse_int_or_empty(&line)).unwrap();
+    let mut gnomes = group_calories(lines);
+    let most = gnomes.iter().max();
+    println!(
+        "The gnome with the most food has {} calories",
+        most.expect("should have been at least one?")
+    );
+
+    gnomes.sort();
+    println!("the top three gnomes are:");
+    // println!("wat {:?}", gnomes.iter().rev().take(3));
+    let mut sum = 0;
+    for n in gnomes.iter().rev().take(3) {
+        sum += n;
     }
-    Ok(())
+    println!("the sum is {}", sum);
+}
+
+fn group_calories(data: Vec<Line<u64>>) -> Vec<u64> {
+    let mut gnome_totals: Vec<u64> = vec![];
+    let mut current_sum: Option<u64> = None;
+    let mut process = |l: Line<u64>| match l {
+        Line::Blank => {
+            if let Some(sum) = current_sum {
+                gnome_totals.push(sum);
+                current_sum = None;
+            }
+        }
+        Line::Value(item) => current_sum = current_sum.map(|sum| sum + item).or(Some(item)),
+    };
+    for entry in data {
+        process(entry)
+    }
+    process(Line::Blank);
+    gnome_totals
 }
 
 #[derive(Debug)]
@@ -31,20 +60,25 @@ enum Line<T> {
     Value(T),
     Blank,
 }
-fn parse_int_or_empty(from_str: &String) -> Result<Line<u64>, ()> {
+fn parse_int_or_empty(from_str: &String) -> Result<Line<u64>, ParseIntError> {
     if from_str == "" {
         return Ok(Line::Blank);
     }
-    if let Ok(value) = from_str.parse::<u64>() {
-        return Ok(Line::Value(value));
-    }
-    return Err(());
+    from_str.parse::<u64>().map(|v| Line::Value(v))
 }
 
-fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
+/// Read a file into a vec of parsed items. Will panic on IO error.
+fn read_lines<P, F, L, E>(filename: P, parse_line: F) -> Result<Vec<L>, E>
 where
     P: AsRef<Path>,
+    F: Fn(String) -> Result<L, E>,
+    E: std::error::Error,
 {
-    let file = File::open(filename)?;
-    Ok(io::BufReader::new(file).lines())
+    let file = File::open(filename).unwrap();
+    let mut out: Vec<L> = vec![];
+    for line in io::BufReader::new(file).lines() {
+        let parsed = parse_line(line.unwrap());
+        out.push(parsed?);
+    }
+    Ok(out)
 }
