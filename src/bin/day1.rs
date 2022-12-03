@@ -1,11 +1,6 @@
-use std::{
-    env,
-    fs::File,
-    io::{self, BufRead},
-    num::ParseIntError,
-    path::Path,
-    process::exit,
-};
+use std::{env, num::ParseIntError, process::exit};
+
+use aoc::data::read_lines;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -62,20 +57,4 @@ fn parse_int_or_empty(from_str: &String) -> Result<Line<u64>, ParseIntError> {
         return Ok(Line::Blank);
     }
     from_str.parse::<u64>().map(|v| Line::Value(v))
-}
-
-/// Read a file into a vec of parsed items. Will panic on IO error.
-fn read_lines<P, F, L, E>(filename: P, parse_line: F) -> Result<Vec<L>, E>
-where
-    P: AsRef<Path>,
-    F: Fn(String) -> Result<L, E>,
-    E: std::error::Error,
-{
-    let file = File::open(filename).expect("could not open file");
-    let mut out: Vec<L> = vec![];
-    for line in io::BufReader::new(file).lines() {
-        let parsed = parse_line(line.expect("error reading line"));
-        out.push(parsed?);
-    }
-    Ok(out)
 }
