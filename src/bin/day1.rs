@@ -1,7 +1,7 @@
 use std::{
     env,
     fs::File,
-    io::{self, BufRead, Error},
+    io::{self, BufRead},
     num::ParseIntError,
     path::Path,
     process::exit,
@@ -18,7 +18,8 @@ fn main() {
 }
 
 fn day1(path_str: &String) {
-    let lines = read_lines(&path_str, |line| parse_int_or_empty(&line)).unwrap();
+    let lines =
+        read_lines(&path_str, |line| parse_int_or_empty(&line)).expect("could not parse file");
     let mut gnomes = group_calories(lines);
     let most = gnomes.iter().max();
     println!(
@@ -28,11 +29,7 @@ fn day1(path_str: &String) {
 
     gnomes.sort();
     println!("the top three gnomes are:");
-    // println!("wat {:?}", gnomes.iter().rev().take(3));
-    let mut sum = 0;
-    for n in gnomes.iter().rev().take(3) {
-        sum += n;
-    }
+    let sum: u64 = gnomes.iter().rev().take(3).sum();
     println!("the sum is {}", sum);
 }
 
@@ -74,10 +71,10 @@ where
     F: Fn(String) -> Result<L, E>,
     E: std::error::Error,
 {
-    let file = File::open(filename).unwrap();
+    let file = File::open(filename).expect("could not open file");
     let mut out: Vec<L> = vec![];
     for line in io::BufReader::new(file).lines() {
-        let parsed = parse_line(line.unwrap());
+        let parsed = parse_line(line.expect("error reading line"));
         out.push(parsed?);
     }
     Ok(out)
