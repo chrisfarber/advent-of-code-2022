@@ -7,9 +7,14 @@ pub fn main() {
     let data = read_lines("inputs/day2.txt", Round::parse).expect("could not parse the data?");
     let sum: u32 = data.iter().map(|r| r.score()).sum();
     println!("Final score: {}", sum);
+    println!("oops...");
+    let data =
+        read_lines("inputs/day2.txt", Round::parse_part2).expect("could not parse the data?");
+    let sum: u32 = data.iter().map(|r| r.score()).sum();
+    println!("Correct score: {}", sum);
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 enum Shape {
     Rock,
     Paper,
@@ -39,6 +44,18 @@ impl Shape {
             | (Self::Paper, Self::Rock)
             | (Self::Scissors, Self::Paper) => Outcome::Win,
             _ => Outcome::Lose,
+        }
+    }
+
+    fn to(have_outcome: Outcome, against: &Self) -> Self {
+        match (have_outcome, against) {
+            (Outcome::Draw, shape) => *shape,
+            (Outcome::Win, Self::Paper) => Self::Scissors,
+            (Outcome::Win, Self::Rock) => Self::Paper,
+            (Outcome::Win, Self::Scissors) => Self::Rock,
+            (Outcome::Lose, Self::Paper) => Self::Rock,
+            (Outcome::Lose, Self::Rock) => Self::Scissors,
+            (Outcome::Lose, Self::Scissors) => Self::Paper,
         }
     }
 }
@@ -75,6 +92,26 @@ impl Round {
                 "X" => Shape::Rock,
                 "Y" => Shape::Paper,
                 "Z" => Shape::Scissors,
+                _ => panic!("impossible capture?"),
+            };
+            Ok(Round { opponent, player })
+        } else {
+            Err(ParseError::NotMatched(str))
+        }
+    }
+
+    fn parse_part2(str: String) -> Result<Self, ParseError> {
+        if let Some(captures) = ROUND_REGEX.captures(&str) {
+            let opponent = match &captures[1] {
+                "A" => Shape::Rock,
+                "B" => Shape::Paper,
+                "C" => Shape::Scissors,
+                _ => panic!("impossible capture?"),
+            };
+            let player = match &captures[2] {
+                "X" => Shape::to(Outcome::Lose, &opponent),
+                "Y" => Shape::to(Outcome::Draw, &opponent),
+                "Z" => Shape::to(Outcome::Win, &opponent),
                 _ => panic!("impossible capture?"),
             };
             Ok(Round { opponent, player })
