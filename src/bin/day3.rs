@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, f32::consts::E, hash::Hash};
 
 use aoc::data::read_lines;
 use thiserror::Error;
@@ -18,7 +18,32 @@ fn main() -> Result<(), Day3Error> {
         .iter()
         .map(|r| r.common_types().iter().map(assign_value).sum::<u32>())
         .sum();
-    println!("wat {}", total);
+    println!("part1 {}", total);
+
+    let mut it = data.iter();
+
+    let mut total2: u32 = 0;
+
+    loop {
+        let Some(a) = it.next() else {
+            break;
+        };
+        let b = it
+            .next()
+            .expect("expected data's length to be multiple of 3");
+        let c = it
+            .next()
+            .expect("expected data's length to be multiple of 3");
+
+        a.all()
+            .intersection(&b.all())
+            .copied()
+            .collect::<HashSet<u8>>()
+            .intersection(&c.all())
+            .copied()
+            .for_each(|v| total2 += assign_value(&v))
+    }
+    println!("part2 {}", total2);
     Ok(())
 }
 
@@ -46,6 +71,10 @@ impl Rucksack {
             .into_iter()
             .map(|v| *v)
             .collect()
+    }
+
+    pub fn all(&self) -> HashSet<u8> {
+        self.left.union(&self.right).copied().collect()
     }
 }
 
