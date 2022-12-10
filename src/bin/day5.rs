@@ -23,11 +23,14 @@ fn main() {
     let (rest, (crate_def, crate_indexes, moves)) = parse_file(&text).expect("didn't parse ok");
     println!("received?\n{:?}", crate_def);
     let mut stack = CrateStacks::construct(&crate_def).expect("it should work!");
+    let mut stack2 = CrateStacks::construct(&crate_def).expect("it should work");
     println!("got out?\n{:?}", stack);
     for a_move in moves {
         stack.apply_move(&a_move);
+        stack2.apply_move_with_multiple_crates(&a_move);
     }
     println!("read out the message {}", stack.message());
+    println!("moving multiple: {}", stack2.message());
 }
 
 #[derive(Debug)]
@@ -64,6 +67,16 @@ impl CrateStacks {
                 self.stacks[to].push(v);
             }
         }
+    }
+
+    fn apply_move_with_multiple_crates(&mut self, the_move: &Move) {
+        let from_idx = (the_move.from_index - 1).to_usize();
+        let to_idx = (the_move.to_index - 1).to_usize();
+
+        let from = &mut self.stacks[from_idx];
+        let mut moved = from.split_off(0.max(from.len() - the_move.count.to_usize()));
+
+        self.stacks[to_idx].append(&mut moved);
     }
 
     fn message(&self) -> String {
