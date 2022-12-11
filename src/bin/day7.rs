@@ -12,29 +12,20 @@ fn main() {
 
     let mut track = FileTracker::new();
     for run in commands(&text) {
-        println!("==== RUN ====");
-        println!("command: \"{}\"", run.command);
-        println!("out: \"{}\"", run.output);
         match Command::from(run.command) {
             Command::Cd(dir) => {
-                println!("cd {}", dir);
                 track.cd(dir);
             }
             Command::Ls => {
                 for (fname, size) in ls_out_files(run.output) {
-                    println!("{} - {}", size, fname);
                     track.record_file(fname, size);
                 }
             }
             Command::Unknown => panic!("Unknown command encountered: {}", run.command),
         }
-        println!("==== END ====\n");
     }
 
-    println!("the root's total size is {}", track.root_size());
-    println!("the root's own size is {}", track.root_own_size());
     let sizes = track.collect_sizes();
-    println!("and now, the size list ({}) is {:?}", sizes.len(), sizes);
 
     let solution: u64 = sizes.iter().filter(|s| **s <= 100000).sum();
     println!("the answer? {}", solution);
@@ -110,15 +101,6 @@ impl<'a> Dir<'a> {
         }
         out
     }
-
-    fn size(&self) -> u64 {
-        self.own_file_size
-            + self
-                .subdirs
-                .values()
-                .map(|sd| sd.borrow().size())
-                .sum::<u64>()
-    }
 }
 
 #[derive(Debug)]
@@ -165,31 +147,7 @@ impl<'a> FileTracker<'a> {
         dir.own_file_size += size;
     }
 
-    fn root_own_size(&self) -> u64 {
-        self.root.borrow().own_file_size
-    }
-
-    fn root_size(&self) -> u64 {
-        self.root.borrow().size()
-    }
-
-    fn size_of_root_subfolder(&self, name: &str) -> Option<u64> {
-        let root = (*self.root).borrow();
-        let dir = root.subdirs.get(name);
-        dir.map(|dir| (*dir).borrow().own_file_size)
-    }
-
     fn collect_sizes(&self) -> Vec<u64> {
         self.root.borrow().sizes()
     }
 }
-
-// struct DirIter<'a> {
-
-// }
-
-// impl<'a> Iterator for DirIter<'a> {
-//     type Item = Dir<'a>;
-
-//     fn next(&mut self) -> Option<Self::Item> {}
-// }
